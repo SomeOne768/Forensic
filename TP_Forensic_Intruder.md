@@ -409,6 +409,85 @@ L'investigation devrait donc surement être appronfondie de ce côté.
 
 ### 2.4. Quatrième partition
 
+```
+fsstat forensic_trainings_storage_001.dd -o 6221824
+FILE SYSTEM INFORMATION
+--------------------------------------------
+File System Type: Ext4
+Volume Name: 
+Volume ID: 972eefe143fdeb95584232f896ce8533
+
+Last Written at: 2022-10-06 14:38:11 (CEST)
+Last Checked at: 2022-10-06 14:14:57 (CEST)
+
+Last Mounted at: 2022-10-06 14:32:21 (CEST)
+Unmounted properly
+Last mounted on: /media/chris/3385ce96-f832-4258-95eb-fd43e1ef2e97
+Source OS: Linux
+```
+
+Systeme de fichier Ext4
+OS: Linux
+
+Point intéressant: monté sur notre clé USB et dernière écriture après le fichier suspect de la partition 1
+
+
+On découvre un fichier zip
+```
+fls forensic_trainings_storage_001.dd -o 6221824
+d/d 11:	lost+found
+r/r * 12(realloc):	ziiBIfHf
+r/r 12:	archive.zip
+d/d 7089:	extrafolder_from_unzip
+V/V 49617:	$OrphanFiles
+
+
+icat forensic_trainings_storage_001.dd -o 6221824 12 | xxd
+00000000: 504b 0304 0a00 0000 0000 9a73 4655 0000  PK.........sFU..
+00000010: 0000 0000 0000 0000 0000 0a00 1c00 666f  ..............fo
+00000020: 6c64 6572 3030 312f 5554 0900 0304 ca3e  lder001/UT.....>
+00000030: 6315 ca3e 6375 780b 0001 04e8 0300 0004  c..>cux.........
+00000040: e803 0000 504b 0304 0a00 0000 0000 2c73  ....PK........,s
+00000050: 4655 75ae fab2 1700 0000 1700 0000 1800  FUu.............
+00000060: 1c00 666f 6c64 6572 3030 312f 6669 6c65  ..folder001/file
+00000070: 3030 312d 6372 6561 7465 5554 0900 0333  001-createUT...3
+00000080: c93e 6333 c93e 6375 780b 0001 04e8 0300  .>c3.>cux.......
+00000090: 0004 e803 0000 7468 6973 2069 7320 6170  ......this is ap
+000000a0: 7065 6e64 696e 6720 6461 7461 0a50 4b03  pending data.PK.
+000000b0: 0414 0000 0008 009a 7346 5525 4091 bb3a  ........sFU%@..:
+000000c0: 0000 003d 0000 0019 001c 0066 6f6c 6465  ...=.......folde
+000000d0: 7230 3031 2f66 696c 6530 3033 2d72 656e  r001/file003-ren
+000000e0: 616d 6564 5554 0900 0304 ca3e 6304 ca3e  amedUT.....>c..>
+000000f0: 6375 780b 0001 04e8 0300 0004 e803 0000  cux.............
+00000100: 0b76 0f33 f50c 760a 4d74 cfa9 f204 63b7  .v.3..v.Mt....c.
+00000110: 524f f730 93c8 70c3 f224 f7d0 f424 a3c8  RO.0..p..$...$..
+00000120: f4c8 5cb7 aaa8 9048 03a0 7869 a491 6576  ..\....H..xi..ev
+00000130: 62b8 699e 4fba ad2d 1700 504b 0102 1e03  b.i.O..-..PK....
+00000140: 0a00 0000 0000 9a73 4655 0000 0000 0000  .......sFU......
+00000150: 0000 0000 0000 0a00 1800 0000 0000 0000  ................
+00000160: 1000 ff41 0000 0000 666f 6c64 6572 3030  ...A....folder00
+00000170: 312f 5554 0500 0304 ca3e 6375 780b 0001  1/UT.....>cux...
+00000180: 04e8 0300 0004 e803 0000 504b 0102 1e03  ..........PK....
+00000190: 0a00 0000 0000 2c73 4655 75ae fab2 1700  ......,sFUu.....
+000001a0: 0000 1700 0000 1800 1800 0000 0000 0100  ................
+000001b0: 0000 ff81 4400 0000 666f 6c64 6572 3030  ....D...folder00
+000001c0: 312f 6669 6c65 3030 312d 6372 6561 7465  1/file001-create
+000001d0: 5554 0500 0333 c93e 6375 780b 0001 04e8  UT...3.>cux.....
+000001e0: 0300 0004 e803 0000 504b 0102 1e03 1400  ........PK......
+000001f0: 0000 0800 9a73 4655 2540 91bb 3a00 0000  .....sFU%@..:...
+00000200: 3d00 0000 1900 1800 0000 0000 0100 0000  =...............
+00000210: ff81 ad00 0000 666f 6c64 6572 3030 312f  ......folder001/
+00000220: 6669 6c65 3030 332d 7265 6e61 6d65 6455  file003-renamedU
+00000230: 5405 0003 04ca 3e63 7578 0b00 0104 e803  T.....>cux......
+00000240: 0000 04e8 0300 0050 4b05 0600 0000 0003  .......PK.......
+00000250: 0003 000d 0100 003a 0100 0000 00         .......:.....
+```
+
+Encore une fois on retombe à ce fameux file003 du dosser folder001 qui a été renommé.
+On reviendra plus tard faire une copie de ce dernier pour l'exploiter
+
+
+
 
 
 
