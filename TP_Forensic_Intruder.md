@@ -1,9 +1,9 @@
-# TP Forensic : Intruder 
+<center># TP Forensic : Intruder </center>
 
 # Abdeljalil ZOGHLAMI
 
 
-## 1 . Acquisition des données
+##<center> 1 . Acquisition des données</center>
 
 Verification du hash:
 ```
@@ -483,10 +483,17 @@ icat forensic_trainings_storage_001.dd -o 6221824 12 | xxd
 00000250: 0003 000d 0100 003a 0100 0000 00         .......:.....
 ```
 
-Encore une fois on retombe à ce fameux file003 du dosser folder001 qui a été renommé.
-On reviendra plus tard faire une copie de ce dernier pour l'exploiter
+Encore une fois on retombe sur ce fameux file003 du dosser folder001 qui a été renommé.
+
+```
+sha256sum forensic_trainings_storage_001.dd 
+be7de1857c72a7abe8b00198b01ca11cd9ffffda081ad278fe8a9f6f0f54ead0  forensic_trainings_storage_001.dd
+```
+Notre fichier semble toujours non corrompu
 
 
+
+###2.5. Zones suspectes
 
 
 
