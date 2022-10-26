@@ -363,11 +363,51 @@ Cependant on ne trouveras rien  de bien intéressant.
 
 
 Systeme de fichier fat16
-Il semble difficile d'accéder à cette partition.
+
+```
+ils forensic_trainings_storage_001.dd -o 3076096
+class|host|device|start_time
+ils|jalil-580-054nf||1666809163
+st_ino|st_alloc|st_uid|st_gid|st_mtime|st_atime|st_ctime|st_crtime|st_mode|st_nlink|st_size
+```
+Pas de fichier supprimé.
+
+```
+jalil@jalil-580-054nf:~/Documents/ZZ2/forensic$ ils forensic_trainings_storage_001.dd -o 3076096 -me
+md5|file|st_ino|st_ls|st_uid|st_gid|st_size|st_atime|st_mtime|st_ctime|st_crtime
+0|<forensic_trainings_storage_001.dd--alive-2>|2|-/d---------|0|0|16384|0|0|0|0
+0|<forensic_trainings_storage_001.dd-$MBR-alive-33545603>|33545603|-/v---------|0|0|512|0|0|0|0
+0|<forensic_trainings_storage_001.dd-$FAT1-alive-33545604>|33545604|-/v---------|0|0|131072|0|0|0|0
+0|<forensic_trainings_storage_001.dd-$FAT2-alive-33545605>|33545605|-/v---------|0|0|131072|0|0|0|0
+0|<forensic_trainings_storage_001.dd-$OrphanFiles-alive-33545606>|33545606|-/V---------|0|0|0|0|0|0|0
+```
+Rien qui ne semble suspect
 
 
+```
+jalil@jalil-580-054nf:~/Documents/ZZ2/forensic$ fls forensic_trainings_storage_001.dd -o 3076096 -me
+0|e/$MBR|33545603|v/v---------|0|0|512|0|0|0|0
+0|e/$FAT1|33545604|v/v---------|0|0|131072|0|0|0|0
+0|e/$FAT2|33545605|v/v---------|0|0|131072|0|0|0|0
+0|e/$OrphanFiles|33545606|V/V---------|0|0|0|0|0|0|0
+jalil@jalil-580-054nf:~/Documents/ZZ2/forensic$ istat forensic_trainings_storage_001.dd -o 3076096 0
+Metadata address is too small for image (2)
+```
+```
+fsstat forensic_trainings_storage_001.dd -o 3076096
+FILE SYSTEM INFORMATION
+--------------------------------------------
+File System Type: FAT16
 
+METADATA INFORMATION
+--------------------------------------------
+Range: 2 - 33545606
 
+```
+Il semble difficile d'accéder à cette partition. De plus, on peut lire "MBR FAT1 et FAT2". Cette partition contient en fait elle même d'autres partitions. En se souvenant qu'une partie non alloué la succèdent et qu'en plus on y trouve très peut de "fichier" alors que la range va de 2 à 33545606.
+L'investigation devrait donc surement être appronfondie de ce côté.
+
+### 2.4. Quatrième partition
 
 
 
