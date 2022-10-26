@@ -3,7 +3,7 @@
 # Abdeljalil ZOGHLAMI
 
 
-##<center> 1 . Acquisition des données</center>
+##1 . Acquisition des données
 
 Verification du hash:
 ```
