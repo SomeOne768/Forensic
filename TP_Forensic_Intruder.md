@@ -3,7 +3,8 @@
 # Abdeljalil ZOGHLAMI
 
 
-##1 . Acquisition des données
+# I - Analyse Technique 
+## 1. Acquisition des données
 
 Verification du hash:
 ```
@@ -381,7 +382,7 @@ md5|file|st_ino|st_ls|st_uid|st_gid|st_size|st_atime|st_mtime|st_ctime|st_crtime
 0|<forensic_trainings_storage_001.dd-$FAT2-alive-33545605>|33545605|-/v---------|0|0|131072|0|0|0|0
 0|<forensic_trainings_storage_001.dd-$OrphanFiles-alive-33545606>|33545606|-/V---------|0|0|0|0|0|0|0
 ```
-Rien qui ne semble suspect
+*Rien qui ne semble suspect... ?*
 
 
 ```
@@ -404,7 +405,7 @@ METADATA INFORMATION
 Range: 2 - 33545606
 
 ```
-Il semble difficile d'accéder à cette partition. De plus, on peut lire "MBR FAT1 et FAT2". Cette partition contient en fait elle même d'autres partitions. En se souvenant qu'une partie non alloué la succèdent et qu'en plus on y trouve très peut de "fichier" alors que la range va de 2 à 33545606.
+Il semble difficile d'accéder à cette partition. De plus, on peut lire "MBR FAT1 et FAT2". Cette partition contient en fait elle même d'autres partitions. En se souvenant qu'une partie non alloué la succèdent et qu'en plus on y trouve très peu de "fichier" alors que la **range** va de 2 à 33545606.
 L'investigation devrait donc surement être appronfondie de ce côté.
 
 ### 2.4. Quatrième partition
@@ -484,6 +485,7 @@ icat forensic_trainings_storage_001.dd -o 6221824 12 | xxd
 ```
 
 Encore une fois on retombe sur ce fameux file003 du dosser folder001 qui a été renommé.
+De même a partir des autres fichiers.
 
 ```
 sha256sum forensic_trainings_storage_001.dd 
@@ -491,16 +493,43 @@ be7de1857c72a7abe8b00198b01ca11cd9ffffda081ad278fe8a9f6f0f54ead0  forensic_train
 ```
 Notre fichier semble toujours non corrompu
 
-
+Pour finir, on essaie de lire ce qui se trouve au debut de cette partition (MBR) et on remarque qu'elle n'est pas bootable. 
+```
+blkcat forensic_trainings_storage_001.dd -o 3076096 0
+�<�mkfs.fat  �?��.���)7�lNO NAME    FAT16   �[|�"�t
+                                                   V���^��2�����This is not a bootable disk.  Please insert a bootable floppy and
+press any key to try again ... 
+```
 
 ###2.5. Zones suspectes
 
+Nous allons maintenant nous intéressé à cette zone non alloué ainsi que le contenu de la partition 3
+
+```
+mmls forensic_trainings_storage_001.dd -o 5173248 -v
+
+fls forensic_trainings_storage_001.dd -o 5173248  -r -v
+```
+Je ne suis pas arrivé à exploiter cette partie.
+
+
+# II -Conclusion - Executive Summary:
+
+L'intrus qui a introduit sa clé a pu utiliser un programme. Il est également possible que celui ai essayé/réussi à cacher des données. Ce dernier a eu un accès aux alentour de 14 heures et beaucoup de trace mène a notre dossier folder001 dans lequel un fichier a pu être copié/modifié/executer. De plus, des partitions (et donc des fichiers) semblent être cachées.
+
+# III - Conclusion - Story telling:
+
+Que s’est-il passé sur ce support de stockage ? C’est grave ? Pas grave ?
+
+Sur ce support de stockage, beaucoup de fichiers ont été supprimé dans la même tranche horaire.
+De plus, tout semble mené au dossier folder001 et en particulier à deux fichier s'y trouvant file001 et file003.
+Le file001. On peut y trouvé un fichier caché avec extension .swp, ce qui signifie que vi a été utilisé. Etant l'heure de création/suppression, on peut supposer que le fichier 1 a été deposé en premier pour pouvoir être renomé ensuite et executer du code malveillant avec file003.
+Tous les fichiers suspect de toutes les partitions mènent (à Rome) à cet endroit. Cela pourrait nous laisser penser de nous focaliser dessus. Cependant, mis à part un FLAG en base 64, on n'y trouve rien d'intéressant. Peut-être est-ce un moyen de détourner des partitions cachées se situant dans la partion 3 ainsi que de la zone non alloué qui la succède.
+Mes compétences sont limitées et je n'ai rien pu en tirer mais c'est dans cet endroit qu'il faudrait continuer l'investigation.
 
 
 
-
-
-
+# IV - Annexes
 
 
 
