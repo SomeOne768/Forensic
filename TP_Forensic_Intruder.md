@@ -6,26 +6,43 @@
 # I - Analyse Technique 
 ## 1. Acquisition des données
 
+
+Téléchargement de la pièce via le drive uca: https://drive.uca.fr/d/d2461496676140878f7a/?p=%2Fchallenge&mode=list
+
 Verification du hash:
 ```
 cmd: sha256sum forensic_trainings_storage_001.dd 
 result: be7de1857c72a7abe8b00198b01ca11cd9ffffda081ad278fe8a9f6f0f54ead0  forensic_trainings_storage_001.dd
 ````
 
-Le hash correspond à celui sur lequel on doit enquêter.
+Le hash correspond à celui sur lequel on doit enquêter, on peut donc commencer.
 
 ## 2.Investigation
 
 On commence par regarder le **Master Boot Record**
 ```
 mmls forensic_trainings_storage_001.dd
+DOS Partition Table
+Offset Sector: 0
+Units are in 512-byte sectors
+
+      Slot      Start        End          Length       Description
+000:  Meta      0000000000   0000000000   0000000001   Primary Table (#0)
+001:  -------   0000000000   0000002047   0000002048   Unallocated
+002:  000:000   0000002048   0002052095   0002050048   NTFS / exFAT (0x07)
+003:  000:001   0002052096   0003076095   0001024000   NTFS / exFAT (0x07)
+004:  000:002   0003076096   0005173247   0002097152   DOS FAT16 (0x06)
+005:  -------   0005173248   0006221823   0001048576   Unallocated
+006:  000:003   0006221824   0007806975   0001585152   Linux (0x83)
 ```
 Nous avons 4 partitions.
-On remarque 2 parties non allouées et en particulier une se trouvant entre 2 partitions.
+On remarque 2 parties non allouées et en particulier une se trouvant entre 2 partitions. Cependant les debuts et fin semblent corrects.
 
 A l'aide du programme python (annexe) ou de la commande ci-dessous, on détermine les types de partition et on récupère les différentes informations.
 ```
 file forensic_trainings_storage_001.dd
+forensic_trainings_storage_001.dd: DOS/MBR boot sector MS-MBR Windows 7 english at offset 0x163 "Invalid partition table" at offset 0x17b "Error loading operating system" at offset 0x19a "Missing operating system", disk signature 0xdaae630f; partition 1 : ID=0x7, active, start-CHS (0x0,32,33), end-CHS (0x7f,187,60), startsector 2048, 2050048 sectors; partition 2 : ID=0x7, start-CHS (0x7f,187,61), end-CHS (0xbf,121,58), startsector 2052096, 1024000 sectors; partition 3 : ID=0x6, start-CHS (0xbf,121,59), end-CHS (0x142,5,3), startsector 3076096, 2097152 sectors; partition 4 : ID=0x83, start-CHS (0x183,74,8), end-CHS (0x1e4,254,63), startsector 6221824, 1585152 sectors
+
 ```
 On y remarque que les secteurs ne se suivent pas.
 Voici un tableau des informations obtenue:
@@ -40,7 +57,8 @@ Voici un tableau des informations obtenue:
 | P3 | BF | 121 | 59 | 152 | 5 | 3 |
 | P4 | 183 | 74 | 8 | 1e4| 254 | 59 |
 
-Espace mmoire contigüe: P3 ES => P4 SS
+Espace mémoire contigüe: P3 Ending Sector =/> P4 Start Sector
+
 Il y a donc un trou entre les secteurs de la partion 3 et 4.
 
 Autre explication : les partitions sont rangées à la fin. Il est donc "normal" d’avoir des trous au début en revanche des trous entre plusieurs partitions non et surtout pas à la fin.
@@ -69,23 +87,40 @@ Possible encryption detected (High entropy (7,99))
 Ici, on commence par s'intéresser à la première partition.
 
 System de fichier: NTFS 
+
 OS : Windows XP 
 
 Commençons par regarder les inodes des fichiers supprimés:
 
 ```
 ils forensic_trainings_storage_001.dd -o 2048
+class|host|device|start_time
+ils|jalil-580-054nf||1666887467
+st_ino|st_alloc|st_uid|st_gid|st_mtime|st_atime|st_ctime|st_crtime|st_mode|st_nlink|st_size
+16|f|4294967295|0|1665058494|1665058494|1665058494|1665058494|555|0|0
+17|f|4294967295|0|1665058494|1665058494|1665058494|1665058494|555|0|0
+18|f|4294967295|0|1665058494|1665058494|1665058494|1665058494|555|0|0
+19|f|4294967295|0|1665058494|1665058494|1665058494|1665058494|555|0|0
+20|f|4294967295|0|1665058494|1665058494|1665058494|1665058494|555|0|0
+21|f|4294967295|0|1665058494|1665058494|1665058494|1665058494|555|0|0
+22|f|4294967295|0|1665058494|1665058494|1665058494|1665058494|555|0|0
+23|f|4294967295|0|1665058494|1665058494|1665058494|1665058494|555|0|0
+66|f|48|0|1665059331|1665059251|1665059331|1665059251|777|0|12288
+67|f|48|0|1665059332|1665059332|1665059332|1665059332|777|0|0
+73|f|48|0|1665059331|1665059331|1665059332|1665059331|777|0|61
+74|f|48|0|1665059251|1665059251|1665059251|1665059251|777|0|0
+
 ```
 On s’aperçoit que le numéro des inodes fait un “saut”. On passe de 23 à **66** et de la même manière, les droits des fichiers suivants sont passés en 777. De plus on s’aperçoit que le fichier **inode 66** est le premier fichier de taille > 0. Idem ensuite pour le saut en 73.
 Dans la suite on évoquera les fichiers : **file003-renamed**[.swp ou pas]  
 ainsi que du dossier: **folder001** d'inode 64
 
-On se rend compte que c’est l’utilisateur 48 (uid) qui est propriétaire des fichiers suspect de la partition 1. De plus, on trouve des inodes supplémentaire 64 et 65 qui apparaissent avec l’option -me. Il est donc interessant de voir que le dossier, qui contient les fichiers précédemment cités et qui ont été supprimé, toujours présent. 
+On se rend compte que c’est l’utilisateur 48 (uid) qui revient pour les fichiers suspect de la partition 1. De plus, on trouve des inodes supplémentaire 64 et 65 qui apparaissent avec l’option -me. Il est donc interessant de voir que le dossier, qui contient les fichiers précédemment cités et qui ont été supprimé, toujours présent. 
 
 On y voit le format swp. Cette extension se crée lorsque vi est utilisé. 
 On peut penser que c’est quelqu’un qui a donc executé des commandes car les vrais codeurs n’utilisent pas vi(m) :).
 
-*Question : Est-il possible que le fichier003 renommé soit un copie du fichier001 que l'on a modifi par la suite*
+*Question : Est-il possible que le fichier003 renommé soit un copie du fichier001 que l'on a modifi par la suite?*
 
 Récupérons l'horodatage du dossier où l'on a écrit avec vi:
 ```
@@ -199,9 +234,10 @@ icat forensic_trainings_storage_001.dd -o 2048 66-128-2 | xxd | grep -v "0000 00
 ```
 
 On y trouve quelque chose d'interessant:
-**Chris debian**
+**Chris debian**.
+
 Sur linux /media est le point de montage par défaut. Tous les médias, CD-ROM, HDD USB, clés USB, sont montés automatiquement dans ce dossier. 
-On y retrouve l'amour des CTF de notre prof, notamment un petit code en base 64: 
+On y retrouve l'amour de notre prof pour les CTF, notamment un petit code en base 64: 
 
 ```
 code: SGV5ISBUaGlzIGlzIGFuIGV4YW1wbGUgb2YgYmFzZTY0IGVuY29kaW5nLg== 
@@ -219,6 +255,8 @@ result: be7de1857c72a7abe8b00198b01ca11cd9ffffda081ad278fe8a9f6f0f54ead0  forens
 Le hash correspond toujours, on a donc rien corrompue jusqu'ici.
 
 ### 2.2. Deuxième partition
+
+
 
 Maintenant qu'on connait un peu le fonctionnement, on va pouvoir chercher plus efficacement.
 
@@ -242,7 +280,7 @@ inode 16 à 23.
 ```
 istat  forensic_trainings_storage_001.dd  -o 2048 64
 ```
-Ces fichiers ont tous été crée au même moment et la même journée que nos fichier suspect de la partition prcédente.
+Ces fichiers ont tous été crée au même moment et la même journée que nos fichiers suspect de la partition prcédente.
 
 Esseyons de lire ce qu'il y a à l'intérieur:
 ```
@@ -348,15 +386,14 @@ blkcat forensic_trainings_storage_001.dd -o 2052096 20 -h | grep -v "00000000 00
 Seul le fichier d'inode 20 n'est pas vide.
 On retrouve le même code que précédemennt et on peut lire une fois de plus "file003-renamed".
 
-Chercher parmis les fichiers non supprimés
+Regardons maintenant parmis les fichiers non supprimés:
 ```
 ils forensic_trainings_storage_001.dd -o 2052096  -me
 0|<forensic_trainings_storage_001.dd-transfer-alive-64>|64|-/drwxrwxrwx|48|0|272|1665059449|1665059434|1665059434|1665059421
 0|<forensic_trainings_storage_001.dd-file001-create-alive-65>|65|-/rrwxrwxrwx|48|0|23|1665059852|1665059434|1665059434|1665059434
 0|<forensic_trainings_storage_001.dd-file003-renamed-alive-66>|66|-/rrwxrwxrwx|48|0|61|1665059852|1665059434|1665059434|1665059434
 ```
-Le même uid revient avec les droits maximaux sur ces fichers. Cependant ces derniers sont vides.
-Cependant on ne trouveras rien  de bien intéressant.
+Le même uid revient avec les droits maximaux sur ces fichers. Cependant ces derniers sont vides et on ne trouveras rien  de bien intéressant.
 
 
 ### 2.3. Troisième partition
@@ -513,7 +550,7 @@ fls forensic_trainings_storage_001.dd -o 5173248  -r -v
 Je ne suis pas arrivé à exploiter cette partie.
 
 
-# II -Conclusion - Executive Summary:
+# II - Conclusion - Executive Summary:
 
 L'intrus qui a introduit sa clé a pu utiliser un programme. Il est également possible que celui ai essayé/réussi à cacher des données. Ce dernier a eu un accès aux alentour de 14 heures et beaucoup de trace mène a notre dossier folder001 dans lequel un fichier a pu être copié/modifié/executer. De plus, des partitions (et donc des fichiers) semblent être cachées.
 
@@ -523,17 +560,45 @@ Que s’est-il passé sur ce support de stockage ? C’est grave ? Pas grave ?
 
 Sur ce support de stockage, beaucoup de fichiers ont été supprimé dans la même tranche horaire.
 De plus, tout semble mené au dossier folder001 et en particulier à deux fichier s'y trouvant file001 et file003.
-Le file001. On peut y trouvé un fichier caché avec extension .swp, ce qui signifie que vi a été utilisé. Etant l'heure de création/suppression, on peut supposer que le fichier 1 a été deposé en premier pour pouvoir être renomé ensuite et executer du code malveillant avec file003.
+Le file001. On peut y trouvé un fichier caché avec extension .swp, ce qui signifie que vi a été utilisé. Etant donné l'heure de création/suppression, on peut supposer que le fichier 1 a été deposé en premier pour pouvoir être renomé ensuite et executer du code malveillant avec file003.
 Tous les fichiers suspect de toutes les partitions mènent (à Rome) à cet endroit. Cela pourrait nous laisser penser de nous focaliser dessus. Cependant, mis à part un FLAG en base 64, on n'y trouve rien d'intéressant. Peut-être est-ce un moyen de détourner des partitions cachées se situant dans la partion 3 ainsi que de la zone non alloué qui la succède.
 Mes compétences sont limitées et je n'ai rien pu en tirer mais c'est dans cet endroit qu'il faudrait continuer l'investigation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 # IV - Annexes
 
 
-
-
+- Fin d'analyse:
+```
+sha256sum forensic_trainings_storage_001.dd 
+be7de1857c72a7abe8b00198b01ca11cd9ffffda081ad278fe8a9f6f0f54ead0  forensic_trainings_storage_001.dd
+```
+- Script en PJ
+- fichier python en PJ
 
 
 
